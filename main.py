@@ -19,8 +19,11 @@
 
 # Main.
 
-import wx, os, sys, locale, pickle, shutil, json, time
+import wx, os, sys, locale, pickle, shutil, json, time, traceback
 from datetime import datetime
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import padding
 import lib.singletons as singletons
 from lib.conf import conf, APPINFO, aconf, cache
 from lib.gui import ErrorDialog, setIcon, SysTray, MainGUI, Settings, AboutDialog, Notification
@@ -201,9 +204,9 @@ class APIInterface:
             with urllib.request.urlopen(request) as response:
                 remoteStorage = response.read().decode('utf-8').splitlines()
                 singletons.log('Successfully connected to remote API.', 'Notice', 'Connected to remote API...')
-                result = [self.parseJSON(x) for x in remoteStorage]
+                result = [self._parseJSON(x) for x in remoteStorage]
                 result.reverse()
-                return [x for x in result if x is not None]
+                return [x for x in result if type(x) is dict]
         except urllib.error.HTTPError as e:  # HTTP errors
             msg = 'Unable to connect to remote API, received HTTP%s!' % e.code
             singletons.log('%s, "%s"' % (msg, e.reason), 'HTTP Error', msg)
@@ -214,16 +217,50 @@ class APIInterface:
             singletons.log('%s\n%s' % ('Unable to connect to remote API:\n', e), 'Error', 'Unable to connect to remote API, please check log!')
         return []
 
-    def parseJSON(self, line):
+    def _parseJSON(self, line):
         """Parse JSON data."""
+        data = None
         try:
             data = json.loads(line)
-            return data
         except ValueError:
-            return None
+            try:
+                rawline = self._decrypt(line)
+                if rawline:
+                    data = json.loads(rawline)
+            except ValueError as e:  # Garbage removal
+                singletons.log('JSON structure problem, unable to extract:\n %s' % e, 'Warning')
+            except Exception:  # General errors
+                err = traceback.format_exc(chain=False)
+                singletons.log('Unexpected error in line while trying to decrypt remote API response:\n %s' % err, 'Warning')
+        except Exception:  # General errors
+            err = traceback.format_exc(chain=False)
+            singletons.log('Unexpected error in line while parsing remote API response:\n %s' % err, 'Warning')
+        finally: return data
+
+    def _decrypt(self, encrypted_data):
+        """Decrypt line.
+            This is most probably a bad implementation, replicate/copy at your own peril!!!
+        """
+        if not conf['config.api.key']: return ''
+        key = bytes(conf['config.api.key'], encoding='utf-8')
+        # Decode the base64-encoded string to obtain the IV and ciphertext
+        encrypted_data = base64.b64decode(encrypted_data)
+        iv = encrypted_data[:16]
+        ciphertext = encrypted_data[16:]
+        # Create a Cipher object using the same key, IV, and algorithm/mode of operation
+        backend = default_backend()
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=backend)
+        # Decrypt the ciphertext
+        decryptor = cipher.decryptor()
+        decrypted_data = decryptor.update(ciphertext) + decryptor.finalize()
+        # Remove any padding, we always expect a JSON structure
+        unpadder = padding.PKCS7(128).unpadder()
+        plaintext = unpadder.update(decrypted_data) + unpadder.finalize()
+        # Return the decrypted data
+        return plaintext.decode('utf-8')
 
     def checkCreds(self):
-        """Examine supplied API credential if valid."""
+        """Examine supplied API credentials if valid."""
         if conf['config.api.url'].strip():
             return True
         else: return False
@@ -261,27 +298,49 @@ class MainFrame(MainGUI):
 
     def onUpdate(self, event):
         """MainFrame timed events."""
+        self.chkDataStoreUpdate()
+        # Revert systray icon to default.
+        self.setDefSystryIco()
+        # Update chevrons.
+        self.setChevron()
+
+    def chkDataStoreUpdate(self):
+        """Check for updates in the data store."""
         if cache['sms.data.store'] != cache['sms.data.raw']:
             cache['sms.data.store'] = cache['sms.data.raw']
             cache['sms.active'] = 0
             self.updateSMSGUI()
             self.notifyNewSMS()
-        # Revert systray icon to default when app is open
+
+    def setDefSystryIco(self):
+        """Revert systray icon to default when app is open."""
         if self.IsShown():
             if not aconf['systray.def.ico']:
                 singletons.systray.changeICO()
-        # Chevron buttons state detection
-        if cache['sms.active'] == 0:
+
+    def setChevron(self):
+        """Chevron buttons state detection."""
+        if len(cache['sms.data.store']) <= 1:
             if self.leftBtn.IsEnabled():
                 self.leftBtn.Disable()
-        elif len(cache['sms.data.store']) - 1 == cache['sms.active']:
             if self.rightBtn.IsEnabled():
                 self.rightBtn.Disable()
         else:
-            if not self.rightBtn.IsEnabled():
-                self.rightBtn.Enable()
-            if not self.leftBtn.IsEnabled():
-                self.leftBtn.Enable()
+            if cache['sms.active'] == 0:
+                if self.leftBtn.IsEnabled():
+                    self.leftBtn.Disable()
+                if not self.rightBtn.IsEnabled():
+                    self.rightBtn.Enable()
+            elif len(cache['sms.data.store']) - 1 == cache['sms.active']:
+                if self.rightBtn.IsEnabled():
+                    self.rightBtn.Disable()
+                if not self.leftBtn.IsEnabled():
+                    self.leftBtn.Enable()
+            else:
+                if not self.rightBtn.IsEnabled():
+                    self.rightBtn.Enable()
+                if not self.leftBtn.IsEnabled():
+                    self.leftBtn.Enable()
 
     def notifyNewSMS(self):
         """Notification actions when receiving an SMS."""

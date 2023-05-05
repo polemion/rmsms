@@ -25,7 +25,7 @@ DPOS = wx.DefaultPosition
 
 APPINFO = {
 
-    'ver': '0.90',
+    'ver': '1.00',
     'name': 'rmSMS',
 
     'home': 'https://www.dnkoukas.xyz',
@@ -75,13 +75,14 @@ conf = {
 
     # Settings Dialog
     'settings.pos': DPOS,
-    'settings.size': wx.Size(495, 293),
+    'settings.size': wx.Size(495, 343),
 
     # General Settings
     'config.iconify.onclose': True,
     'config.systray.onstart': False,
 
     # API settings
+    'config.api.key': '',
     'config.api.url': '',
     'config.api.un': '',
     'config.api.ps': '',

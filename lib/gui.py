@@ -324,7 +324,7 @@ class Settings (wx.Dialog):
     def __init__(self, parent=None, id=wx.ID_ANY, title='Settings', pos=DPOS, size=conf['settings.size']):
         """Init."""
         wx.Dialog.__init__(self, parent, id, title, pos, size, style=SIMPLEDLG|wx.RESIZE_BORDER)
-        self.SetSizeHints(wx.Size(495, 293), DSIZE)
+        self.SetSizeHints(wx.Size(495, 343), DSIZE)
         self.Centre(wx.BOTH)
         setIcon(self)
         # Data
@@ -349,6 +349,7 @@ class Settings (wx.Dialog):
         self.apiUrlInit = conf['config.api.url']
         self.apiUserInit = conf['config.api.un']
         self.apiPassInit = conf['config.api.ps']
+        self.apiEncyptInit = conf['config.api.key']
 
     def storeWindowProperties(self):
         """Store window size."""
@@ -361,16 +362,19 @@ class Settings (wx.Dialog):
         conf['config.api.url'] = self.apiUrlInput.GetValue().strip()
         conf['config.api.un'] = self.apiUserInput.GetValue().strip()
         conf['config.api.ps'] = self.apiPassInput.GetValue().strip()
+        conf['config.api.key'] = self.apiEncryptInput.GetValue().strip()
 
     def settingsContent(self):
         """Dialog contents."""
         remoteBox = wx.StaticBox(self, wx.ID_ANY, 'Remote API:')
-        self.apiUrlText = wx.StaticText(remoteBox, wx.ID_ANY, 'URL:', DPOS, DSIZE, 0)
+        self.apiUrlText = wx.StaticText(remoteBox, wx.ID_ANY, 'Log File URL:', DPOS, DSIZE, 0)
         self.apiUrlInput = wx.TextCtrl(remoteBox, wx.ID_ANY, self.apiUrlInit, DPOS, DSIZE, wx.TE_PROCESS_TAB|wx.TE_RIGHT)
-        self.apiUserText = wx.StaticText(remoteBox, wx.ID_ANY, 'Username:', DPOS, DSIZE, 0)
+        self.apiUserText = wx.StaticText(remoteBox, wx.ID_ANY, 'HTTP Auth - Username:', DPOS, DSIZE, 0)
         self.apiUserInput = wx.TextCtrl(remoteBox, wx.ID_ANY, self.apiUserInit, DPOS, DSIZE, wx.TE_PROCESS_TAB|wx.TE_RIGHT)
-        self.apiPassText = wx.StaticText(remoteBox, wx.ID_ANY, 'Password:', DPOS, DSIZE, 0)
+        self.apiPassText = wx.StaticText(remoteBox, wx.ID_ANY, 'HTTP Auth - Password:', DPOS, DSIZE, 0)
         self.apiPassInput = wx.TextCtrl(remoteBox, wx.ID_ANY, self.apiPassInit, DPOS, DSIZE, wx.TE_PASSWORD|wx.TE_PROCESS_TAB|wx.TE_RIGHT)
+        self.apiEncryptText = wx.StaticText(remoteBox, wx.ID_ANY, 'Encrypt Key (need 16 chars):', DPOS, DSIZE, 0)
+        self.apiEncryptInput = wx.TextCtrl(remoteBox, wx.ID_ANY, self.apiEncyptInit, DPOS, DSIZE, wx.TE_PASSWORD|wx.TE_PROCESS_TAB|wx.TE_RIGHT)
         generalBox = wx.StaticBox(self, wx.ID_ANY, 'General:')
         self.notifBtn = wx.Button(generalBox, wx.ID_ANY, 'Setup Notifications Details', DPOS, DSIZE, 0)
         self.minCloseBox = wx.CheckBox(generalBox, wx.ID_ANY, 'Minimize On Close', DPOS, DSIZE, wx.ALIGN_RIGHT)
@@ -379,15 +383,17 @@ class Settings (wx.Dialog):
         self.applyBtn = wx.Button(self, wx.ID_APPLY)
         self.cancelBtn = wx.Button(self, wx.ID_CANCEL)
         # Sizers
-        [x.Wrap(-1) for x in (self.apiUrlText, self.apiUserText, self.apiPassText)]
+        [x.Wrap(-1) for x in (self.apiUrlText, self.apiUserText, self.apiPassText, self.apiEncryptText)]
         apiUrlSizer = wx.BoxSizer(wx.HORIZONTAL)
         apiUrlSizer.AddMany([(self.apiUrlText, 0, wx.ALL|AVER, 5), (self.apiUrlInput, 1, AVER|wx.ALL, 5)])
         apiUserSizer = wx.BoxSizer(wx.HORIZONTAL)
         apiUserSizer.AddMany([(self.apiUserText, 0, wx.ALL|AVER, 5), (self.apiUserInput, 1, wx.ALL|AVER, 5)])
         apiPassSizer = wx.BoxSizer(wx.HORIZONTAL)
         apiPassSizer.AddMany([(self.apiPassText, 0, wx.ALL|AVER, 5), (self.apiPassInput, 1, wx.ALL|AVER, 5)])
+        apiEncryptSizer = wx.BoxSizer(wx.HORIZONTAL)
+        apiEncryptSizer.AddMany([(self.apiEncryptText, 0, wx.ALL|AVER, 5), (self.apiEncryptInput, 1, wx.ALL|AVER, 5)])
         apiSizer = wx.StaticBoxSizer(remoteBox, wx.VERTICAL)
-        apiSizer.AddMany([(apiUrlSizer, 1, wx.EXPAND, 5), (apiUserSizer, 1, wx.EXPAND, 5), (apiPassSizer, 1, wx.EXPAND, 5)])
+        apiSizer.AddMany([(apiUrlSizer, 1, wx.EXPAND, 5), (apiUserSizer, 1, wx.EXPAND, 5), (apiPassSizer, 1, wx.EXPAND, 5), (apiEncryptSizer, 1, wx.EXPAND, 5)])
         genSizer = wx.StaticBoxSizer(generalBox, wx.HORIZONTAL)
         genSizer.AddMany([(self.notifBtn, 0, wx.ALL|AVER, 5), ((0, 0), 1, AVER, 5), (self.minCloseBox, 0, wx.ALL|AVER, 5), (self.startMinBox, 0, wx.ALL|AVER, 5)])
         btnSizer = wx.StdDialogButtonSizer()
