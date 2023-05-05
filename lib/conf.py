@@ -27,6 +27,8 @@ APPINFO = {
 
     'ver': '1.15',
     'name': 'rmSMS',
+    'year': '2023',
+    'desc': 'the simple SMS notification app',
 
     'home': 'https://www.dnkoukas.xyz',
     'source': 'https://github.com/polemion/rmsms',
