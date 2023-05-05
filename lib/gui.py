@@ -51,25 +51,28 @@ def setIcon(parent, image=None):
     parent.SetIcon(appICO)
 
 
-def ErrorDialog(message='Unknown error!', caption='Error!', parent=None, style=wx.OK|wx.CANCEL|wx.CENTRE|wx.ICON_ERROR):
+def ErrorDialog(message='Unknown error!', caption='Error!', parent=singletons.MainFrame, style=wx.OK|wx.CANCEL|wx.CENTRE|wx.ICON_ERROR):
     """Shows a simple error dialog and exits..."""
     with wx.MessageDialog(parent, '\n%s\n\nClick Cancel to force close %s.' % (message, APPINFO['name']), caption, style, pos=DPOS) as dialog:
         if dialog.ShowModal() == wx.ID_OK: return wx.ID_OK
         else:
-            if singletons.MainFrame is not None: singletons.MainFrame.onExit()
-            else: sys.exit(1)
+            if singletons.MainFrame is not None:
+                singletons.MainFrame.onExit()
+            else: wx.Exit()
 
 
 def Notification(parent, title='', message='', icon=wx.ICON_INFORMATION, timeout=None):
     """Shows a system notification."""
     notif = wx.adv.NotificationMessage(title, message, parent, icon)
+    if aconf['platform'] == 'windows':
+        notif.UseTaskBarIcon(singletons.systray)
     notif.Show() if timeout is None else notif.Show(timeout)
 
 
 class AboutDialog (wx.Dialog):
     """About dialog."""
 
-    def __init__(self, parent=None, id=wx.ID_ANY, title='%s - v%s' % (APPINFO['name'], APPINFO['ver']), pos=DPOS, size=wx.Size(428, 300)):
+    def __init__(self, parent, id=wx.ID_ANY, title='%s - v%s' % (APPINFO['name'], APPINFO['ver']), pos=DPOS, size=wx.Size(428, 300)):
         """Init."""
         wx.Dialog.__init__(self, parent, id, title, pos, size, style=wx.CAPTION|wx.CLOSE_BOX|wx.STAY_ON_TOP)
         self.SetSizeHints(wx.Size(428, 300), DSIZE)
@@ -105,17 +108,17 @@ class AboutDialog (wx.Dialog):
         self.url2 = wx.adv.HyperlinkCtrl(self, wx.ID_ANY, 'Source', APPINFO['source'], DPOS, DSIZE, wx.adv.HL_DEFAULT_STYLE)
         self.okBtn = wx.Button(self, wx.ID_OK)
         # Sizers
-        logoSizer = wx.BoxSizer(wx.HORIZONTAL)
-        logoSizer.Add( self.logo, 0, AHOR|AVER, 5 )
+        logoSizer = wx.BoxSizer(wx.VERTICAL)
+        logoSizer.Add( self.logo, 0, AHOR, 5 )
         licenseSizer = wx.BoxSizer(wx.HORIZONTAL)
-        licenseSizer.Add(self.licence, 1, AHOR|wx.EXPAND, 5)
+        licenseSizer.Add(self.licence, 1, wx.EXPAND, 5)
         btnSizer = wx.StdDialogButtonSizer()
         btnSizer.AddButton(self.okBtn)
         btnSizer.Realize()
         urlSizer = wx.BoxSizer(wx.HORIZONTAL)
         urlSizer.AddMany([(self.url1, 0, wx.ALL|AVER, 5), (self.url2, 0, wx.ALL|AVER, 5), (btnSizer, 1, AVER, 5)])
         aboutSizer = wx.BoxSizer(wx.VERTICAL)
-        aboutSizer.AddMany([(logoSizer, 0, wx.ALL|AHOR, 5), (licenseSizer, 1, wx.EXPAND|wx.ALL, 5), (urlSizer, 0, AHOR|wx.ALL|wx.EXPAND, 5)])
+        aboutSizer.AddMany([(logoSizer, 0, wx.EXPAND|wx.ALL, 5), (licenseSizer, 1, wx.EXPAND|wx.ALL, 5), (urlSizer, 0, wx.ALL|wx.EXPAND, 5)])
         self.SetSizer(aboutSizer)
 
     def okBtnAction(self, event):
@@ -143,9 +146,9 @@ class MainGUI(wx.Frame):
         rightSizer = wx.BoxSizer(wx.VERTICAL)
         rightSizer.AddMany([(self.settingsBtn, 0, AVER|AHOR|wx.TOP, 5), ((0, 0), 1, AHOR, 5), (self.aboutBtn, 0, AHOR|wx.BOTTOM, 5)])
         bottomSizer = wx.BoxSizer(wx.HORIZONTAL)
-        bottomSizer.AddMany([(self.smsTxt, 1, wx.EXPAND|AHOR|AVER|wx.ALL, 5), (rightSizer, 0, AVER|wx.EXPAND|wx.TOP|wx.BOTTOM, 5)])
+        bottomSizer.AddMany([(self.smsTxt, 1, wx.EXPAND|wx.ALL, 5), (rightSizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 5)])
         mainSizer = wx.BoxSizer(wx.VERTICAL)
-        mainSizer.AddMany([(topSizer, 0, wx.EXPAND|wx.RIGHT|wx.LEFT|AHOR, 5), (bottomSizer, 1, AVER|AHOR|wx.EXPAND|wx.ALL, 5)])
+        mainSizer.AddMany([(topSizer, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5), (bottomSizer, 1, wx.EXPAND|wx.ALL, 5)])
         self.SetSizer(mainSizer)
         self.Layout()
 
@@ -289,13 +292,13 @@ class NotifSettings (wx.Dialog):
         audioSizer = wx.BoxSizer(wx.HORIZONTAL)
         audioSizer.AddMany([(self.audioTxt, 1, wx.ALL|AVER, 5), (self.audioChoice, 1, AVER|wx.ALL, 5)])
         timeoutSizer = wx.BoxSizer(wx.HORIZONTAL)
-        timeoutSizer.AddMany([(self.timeoutChk, 0, AHOR|AVER, 5), ((0, 0), 0, wx.EXPAND|AVER, 5), (self.timeoutInp, 0, AVER|wx.RIGHT|wx.LEFT, 5)])
+        timeoutSizer.AddMany([(self.timeoutChk, 0, 0, 5), ((0, 0), 0, wx.EXPAND, 5), (self.timeoutInp, 0, wx.RIGHT|wx.LEFT, 5)])
         btnSizer = wx.StdDialogButtonSizer()
         [btnSizer.AddButton(x) for x in (self.okBtn, self.cancelBtn)]
         btnSizer.Realize()
         mainSizer = wx.BoxSizer(wx.VERTICAL)
-        mainSizer.AddMany([(audioSizer, 0, wx.EXPAND|AHOR|wx.RIGHT|wx.LEFT, 5), (self.notif1Chk, 0, wx.ALL|AHOR|wx.EXPAND, 5), (self.notif2Chk,
-            0, wx.ALL|AHOR|wx.EXPAND, 5), (timeoutSizer, 0, AHOR|wx.EXPAND|wx.RIGHT|wx.LEFT, 5), ((0, 0), 1, 0, 5), (btnSizer, 0, AHOR|wx.EXPAND|wx.TOP|wx.BOTTOM, 5)])
+        mainSizer.AddMany([(audioSizer, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5), (self.notif1Chk, 0, wx.ALL|wx.EXPAND, 5), (self.notif2Chk,
+            0, wx.ALL|wx.EXPAND, 5), (timeoutSizer, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5), ((0, 0), 1, 0, 5), (btnSizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 5)])
         self.SetSizer(mainSizer)
         self.Layout()
 
@@ -321,7 +324,7 @@ class NotifSettings (wx.Dialog):
 
 class Settings (wx.Dialog):
 
-    def __init__(self, parent=None, id=wx.ID_ANY, title='Settings', pos=DPOS, size=conf['settings.size']):
+    def __init__(self, parent, id=wx.ID_ANY, title='Settings', pos=DPOS, size=conf['settings.size']):
         """Init."""
         wx.Dialog.__init__(self, parent, id, title, pos, size, style=SIMPLEDLG|wx.RESIZE_BORDER)
         self.SetSizeHints(wx.Size(495, 343), DSIZE)
@@ -400,7 +403,7 @@ class Settings (wx.Dialog):
         [btnSizer.AddButton(x) for x in (self.okBtn, self.applyBtn, self.cancelBtn)]
         btnSizer.Realize()
         mainSizer = wx.BoxSizer(wx.VERTICAL)
-        mainSizer.AddMany([(apiSizer, 0, wx.EXPAND|wx.ALL|AHOR, 5), (genSizer, 0, wx.ALL|AHOR|wx.EXPAND, 5), (btnSizer, 1, wx.EXPAND, 5)])
+        mainSizer.AddMany([(apiSizer, 0, wx.EXPAND|wx.ALL, 5), (genSizer, 0, wx.ALL|wx.EXPAND, 5), (btnSizer, 1, wx.EXPAND, 5)])
         self.SetSizer(mainSizer)
         self.Layout()
 

@@ -294,7 +294,7 @@ class MainFrame(MainGUI):
     def initAppFlow(self):
         """Initial Application flow."""
         singletons.interfaceAPI = APIInterface()
-        self.mainTimer.Start(250)
+        self.mainTimer.Start(100)
 
     def onUpdate(self, event):
         """MainFrame timed events."""
@@ -387,7 +387,11 @@ class MainFrame(MainGUI):
             if not os.path.isfile(audiofl):
                 conf['config.ring'] = ' None'
                 return
-            play_file(audiofl, False)
+            from playsound import playsound
+            if aconf['platform'] == 'windows':
+                playsound(audiofl)
+            elif aconf['platform'] == 'linux':
+                play_file(audiofl, False)
         except Exception as e:
             singletons.log('Audio system failure =>\n %s' % e, 'Error')
 
@@ -433,7 +437,6 @@ class MainFrame(MainGUI):
         self.Destroy()
         singletons.app.ExitMainLoop()
         singletons.log('exit')
-        sys.exit()
 
 
 class MyApp(wx.App):

@@ -25,7 +25,7 @@ DPOS = wx.DefaultPosition
 
 APPINFO = {
 
-    'ver': '1.00',
+    'ver': '1.15',
     'name': 'rmSMS',
 
     'home': 'https://www.dnkoukas.xyz',
