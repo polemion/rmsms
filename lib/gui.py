@@ -330,6 +330,7 @@ class Settings (wx.Dialog):
         self.SetSizeHints(wx.Size(495, 343), DSIZE)
         self.Centre(wx.BOTH)
         setIcon(self)
+        self.settingsTimer = wx.Timer()
         # Data
         self.initSettings()
         # Init flow
@@ -343,7 +344,19 @@ class Settings (wx.Dialog):
         self.cancelBtn.SetFocus()
         # Initial flow
         self.settingsEvents()
+        self.settingsTimer.Start(100)
         self.ShowModal()
+
+    def changedSettings(self):
+        """Check if any changes were changed."""
+        return not all([
+            conf['config.iconify.onclose'] == self.minCloseBox.GetValue(),
+            conf['config.systray.onstart'] == self.startMinBox.GetValue(),
+            conf['config.api.url'] == self.apiUrlInput.GetValue().strip(),
+            conf['config.api.un'] == self.apiUserInput.GetValue().strip(),
+            conf['config.api.ps'] == self.apiPassInput.GetValue().strip(),
+            conf['config.api.key'] == self.apiEncryptInput.GetValue().strip()
+        ])
 
     def initSettings(self):
         """Initial stored/default settings."""
@@ -414,8 +427,18 @@ class Settings (wx.Dialog):
         self.applyBtn.Bind(wx.EVT_BUTTON, self.applyBtnAction)
         self.cancelBtn.Bind(wx.EVT_BUTTON, self.onExit)
         self.okBtn.Bind(wx.EVT_BUTTON, self.okBtnAction)
+        self.settingsTimer.Bind(wx.EVT_TIMER, self.onUpdate)
         # On Exiting
         self.Bind(wx.EVT_CLOSE, self.onExit)
+
+    def onUpdate(self, event):
+        """MainFrame timed events."""
+        if not self.changedSettings():
+            if self.applyBtn.IsEnabled():
+                self.applyBtn.Disable()
+        else:
+            if not self.applyBtn.IsEnabled():
+                self.applyBtn.Enable()
 
     def notifBtnAction(self, event):
         """Open notifications settings.."""
@@ -434,6 +457,7 @@ class Settings (wx.Dialog):
         """On closing the dialog."""
         self.storeWindowProperties()
         self.Hide()
+        self.settingsTimer.Destroy()
         self.Destroy()
 
 

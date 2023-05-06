@@ -29,7 +29,12 @@ from lib.conf import conf, APPINFO, aconf, cache
 from lib.gui import ErrorDialog, setIcon, SysTray, MainGUI, Settings, AboutDialog, Notification
 from lib.gui import DSIZE, SIMPLEFRAME
 import urllib.request, base64, urllib.error
-from play_sounds import play_file
+
+# Platform specific
+if aconf['platform'] == 'windows':
+    from playsound import playsound
+else:
+    from play_sounds import play_file
 
 
 class StatusBar:
@@ -344,14 +349,15 @@ class MainFrame(MainGUI):
 
     def notifyNewSMS(self):
         """Notification actions when receiving an SMS."""
-        if not cache['sms.api.first.parse']:  # Do not notify on app boot if Server already has messages.
+        if not cache['sms.api.first.parse']:  # Do not notify on app boot if the Server already has messages.
             # When a new SMS arrives
             singletons.systray.changeICO('appICOnotify')
             if conf['notif.system']:
                 Notification(self, 'New SMS received!', '', timeout=conf['notif.timeout.sec'])
             if conf['notif.open.app']:
                 if not self.IsShown(): self.Show()
-            self.audioNotify()
+            # Lessen the blocking effect of sounds
+            wx.CallLater(100, self.audioNotify)
         else: cache['sms.api.first.parse'] = False
 
     def updateSMSGUI(self):
@@ -387,10 +393,10 @@ class MainFrame(MainGUI):
             if not os.path.isfile(audiofl):
                 conf['config.ring'] = ' None'
                 return
-            from playsound import playsound
             if aconf['platform'] == 'windows':
+                from playsound import playsound
                 playsound(audiofl)
-            elif aconf['platform'] == 'linux':
+            else:
                 play_file(audiofl, False)
         except Exception as e:
             singletons.log('Audio system failure =>\n %s' % e, 'Error')
@@ -488,7 +494,10 @@ class Main:
         """Set application paths."""
         # Check if the application is frozen or not.
         if getattr(sys, 'frozen', False):  # If frozen
-            appPath = sys._MEIPASS
+            try:  # pyinstaller
+                appPath = sys._MEIPASS
+            except:   # py2exe
+                appPath = sys.executable
             # Check if frozen as onefile, hacky
             if '/tmp' in appPath:
                 appPath = sys.executable

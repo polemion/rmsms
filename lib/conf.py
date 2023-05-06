@@ -25,7 +25,7 @@ DPOS = wx.DefaultPosition
 
 APPINFO = {
 
-    'ver': '1.15',
+    'ver': '1.19',
     'name': 'rmSMS',
     'year': '2023',
     'desc': 'the simple SMS notification app',
