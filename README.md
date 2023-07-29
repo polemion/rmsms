@@ -13,7 +13,7 @@ Do note that a separate mobile application, able to send the SMS (in JSON format
 
 Regardless, if you have the know-how, rmSMS is able to consume JSON data and notify, so the implementation is yours to decide.
 
-This was made for personal use, and it does not follow any serious security rules, just Simple HTTP Auth, HTTPs and a rudimentary encryption for the data in rest (if enabled) for the server. Thus it is secure enough, in my opinion, for personal use.
+This was made for personal use, and it does not follow any serious security rules, just Simple HTTP Auth, HTTPs and a rudimentary encryption for the data in rest (if enabled) for the server. Thus, it is secure enough, in my opinion, for personal use.
 
 ## License
 
